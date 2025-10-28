@@ -1,0 +1,4 @@
+#En una terminal, ejecutamos el productor(producer) de Kafka:
+python3 kafka_producer.py
+#En otra terminal se ejecuta este comando
+spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.3 spark_streaming_consumer.py
