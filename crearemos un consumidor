@@ -1,0 +1,41 @@
+nano spark_streaming_consumer.py
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import from_json, col, avg, count
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType
+
+# Crear sesión de Spark
+spark = SparkSession.builder.appName("TrafficStreamingConsumer").getOrCreate()
+spark.sparkContext.setLogLevel("WARN")
+
+# Definir el esquema de los mensajes
+schema = StructType([
+    StructField("vehicle_id", IntegerType()),
+    StructField("speed", DoubleType()),
+    StructField("location", StringType()),
+    StructField("timestamp", IntegerType())
+])
+
+# Leer datos en streaming desde Kafka
+traffic_stream = (
+    spark.readStream
+    .format("kafka")
+    .option("kafka.bootstrap.servers", "localhost:9092")
+    .option("subscribe", "traffic_data")
+    .option("startingOffsets", "latest")
+    .load()
+)
+
+# Convertir el valor de Kafka (bytes) a JSON estructurado
+parsed_df = traffic_stream.select(
+    from_json(col("value").cast("string"), schema).alias("data")
+).select("data.*")
+
+# Calcular estadísticas por ubicación (velocidad promedio y conteo)
+traffic_stats = parsed_df.groupBy("location").agg(
+    avg("speed").alias("avg_speed"),
+    count("vehicle_id").alias("vehicle_count")
+)
+
+# Mostrar resultados en consola
+query = (
+    traffic_stats.writeStream
