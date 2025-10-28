@@ -1,0 +1,27 @@
+# Creamos un archivo llamado kafka_producer.py
+nano kafka_producer.py
+
+
+import time
+import json
+import random
+from kafka import KafkaProducer
+
+# Funcion para generar datos simulados de trafico vehicular
+def generate_traffic_data():
+    locations = ["Av.68", "Calle 80", "Autopista Norte", "Cra. 30", "Calle 13"]
+    return {
+        "vehicle_id": random.randint(1000, 9999),
+        "speed": round(random.uniform(20, 120), 2),
+        "location": random.choice(locations),
+        "timestamp": int(time.time())
+    }
+
+producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
+                         value_serializer=lambda x: json.dumps(x).encode('utf-8'))
+
+while True:
+    traffic_data = generate_traffic_data()
+    producer.send('traffic_data', value=traffic_data)
+    print(f"Sent: {traffic_data}")
+    time.sleep(1)
